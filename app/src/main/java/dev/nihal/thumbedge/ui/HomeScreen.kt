@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccessibilityNew
 import androidx.compose.material.icons.outlined.BatteryAlert
+import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Swipe
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Button
@@ -60,7 +61,7 @@ fun HomeScreen(config: Config, go: (Route) -> Unit) {
 
     ScreenScaffold(title = "Thumb Edge", onBack = null) {
         item {
-            if (running) MasterCard(config) else ServiceOffCard()
+            if (running) MasterCard(config) else ServiceOffCard { go(Route.FIX) }
         }
 
         item { SectionTitle("Handles") }
@@ -88,6 +89,12 @@ fun HomeScreen(config: Config, go: (Route) -> Unit) {
                     summary = if (config.excluded.isEmpty()) "Where handles hide" else "${config.excluded.size} excluded apps",
                     icon = Icons.Outlined.Visibility,
                     onClick = { go(Route.VISIBILITY) },
+                )
+                SettingRow(
+                    "Fix problems",
+                    summary = "Turning itself off, back swipe overlap, activity log",
+                    icon = Icons.Outlined.Build,
+                    onClick = { go(Route.FIX) },
                 )
             }
         }
@@ -142,7 +149,7 @@ private fun MasterCard(config: Config) {
 }
 
 @Composable
-private fun ServiceOffCard() {
+private fun ServiceOffCard(openFix: () -> Unit) {
     val ctx = LocalContext.current
     TipCard(
         Icons.Outlined.AccessibilityNew,
@@ -153,6 +160,7 @@ private fun ServiceOffCard() {
         content = MaterialTheme.colorScheme.onErrorContainer,
     ) {
         Button(onClick = { openAccessibilitySettings(ctx) }) { Text("Open Accessibility") }
+        TextButton(onClick = openFix) { Text("Keeps turning off?") }
     }
     Spacer(Modifier.height(12.dp))
     TipCard(

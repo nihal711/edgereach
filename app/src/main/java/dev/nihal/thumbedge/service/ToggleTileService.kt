@@ -8,6 +8,8 @@ import dev.nihal.thumbedge.data.SettingsRepo
 class ToggleTileService : TileService() {
     override fun onStartListening() {
         super.onStartListening()
+        // Opening Quick Settings is a handy moment to turn the service back on if it was switched off.
+        dev.nihal.thumbedge.data.ServiceGuard.check(this, "quick settings opened")
         refresh()
     }
 

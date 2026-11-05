@@ -127,7 +127,11 @@ class HandleView(ctx: Context, val side: Side, private val host: HandleHost) : V
             MotionEvent.ACTION_MOVE -> if (tracking) {
                 lastX = e.rawX; lastY = e.rawY
                 addPoint(lastX, lastY)
-                evaluate(lastX, lastY)
+                try {
+                    evaluate(lastX, lastY)
+                } catch (t: Throwable) {
+                    dev.nihal.thumbedge.data.DiagLog.add("Gesture error: $t")
+                }
             }
             MotionEvent.ACTION_UP -> if (tracking) {
                 tracking = false

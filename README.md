@@ -22,10 +22,22 @@ One Hand Operation+: thin handles sit on the screen edges, and swiping in from o
 3. If the switch is greyed out: App info › ⋮ › **Allow restricted settings**, then try step 2 again.
 4. Tap **Allow** on the "Keep Thumb Edge running" card so OxygenOS doesn't freeze it.
 
+## If it keeps switching itself off
+When OxygenOS force-closes an app in the background, Android also switches off its accessibility
+service. In the app, open **Fix problems**: allow background activity, lock the app in Recents, and keep
+the keep-alive notification on. With the one-time adb permission below, Thumb Edge also turns the
+service back on by itself (when the app starts, when Quick Settings opens, and every 15 minutes).
+
+One-time adb permission (also needed for the back-swipe option):
+
+    adb shell pm grant dev.nihal.thumbedge android.permission.WRITE_SECURE_SETTINGS
+
 ## Gesture navigation
 With gesture navigation on, the system back swipe also uses the edges. Android lets an app take at most
 200 dp per edge away from it, so keep each handle under ~200 dp tall (the app warns you), or switch to
-3-button navigation in Settings › System › Navigation.
+3-button navigation in Settings › System › Navigation. OxygenOS's own back gesture may ignore that limit;
+with the adb permission, **Fix problems › Turn off system back on handle edges** sets Android's back-swipe
+width to zero on handle edges while Thumb Edge runs, and restores it when the service stops.
 
 ## Build
 `./build.sh` builds a signed release APK in Docker (`gradle:8.14.3-jdk21`, SDK in the `android-sdk` volume).

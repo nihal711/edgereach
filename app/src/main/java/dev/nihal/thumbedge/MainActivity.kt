@@ -23,6 +23,7 @@ import dev.nihal.thumbedge.data.PreviewBus
 import dev.nihal.thumbedge.data.SettingsRepo
 import dev.nihal.thumbedge.data.Side
 import dev.nihal.thumbedge.ui.ExcludedAppsScreen
+import dev.nihal.thumbedge.ui.FixScreen
 import dev.nihal.thumbedge.ui.GestureSettingsScreen
 import dev.nihal.thumbedge.ui.HandleScreen
 import dev.nihal.thumbedge.ui.HomeScreen
@@ -36,13 +37,18 @@ class MainActivity : ComponentActivity() {
         setContent { ThumbTheme { AppRoot() } }
     }
 
+    override fun onResume() {
+        super.onResume()
+        dev.nihal.thumbedge.data.ServiceGuard.check(this, "app opened")
+    }
+
     override fun onStop() {
         super.onStop()
         PreviewBus.highlight.value = null
     }
 }
 
-enum class Route(val depth: Int) { HOME(0), LEFT(1), RIGHT(1), GESTURES(1), VISIBILITY(1), EXCLUDED(2) }
+enum class Route(val depth: Int) { HOME(0), LEFT(1), RIGHT(1), GESTURES(1), VISIBILITY(1), FIX(1), EXCLUDED(2) }
 
 private val stackSaver = listSaver<SnapshotStateList<Route>, String>(
     save = { s -> s.map { it.name } },
@@ -75,6 +81,7 @@ fun AppRoot() {
             Route.GESTURES -> GestureSettingsScreen(config, back)
             Route.VISIBILITY -> VisibilityScreen(config, back, go)
             Route.EXCLUDED -> ExcludedAppsScreen(config, back)
+            Route.FIX -> FixScreen(config, back)
         }
     }
 }

@@ -91,6 +91,12 @@ data class Config(
     val hideKeyboard: Boolean = true,
     val showOnLockscreen: Boolean = false,
     val excluded: Set<String> = emptySet(),
+    /** Shows a quiet ongoing notification so OxygenOS treats the app as running and doesn't close it. */
+    val keepAlive: Boolean = true,
+    /** Turns the accessibility service back on if the system switches it off (needs the adb grant). */
+    val autoRepair: Boolean = true,
+    /** Turns off the system back swipe on edges that have a handle (needs the adb grant). */
+    val blockSystemBack: Boolean = false,
 ) {
     fun handle(s: Side) = if (s == Side.LEFT) left else right
     fun withHandle(s: Side, h: HandleConfig) = if (s == Side.LEFT) copy(left = h) else copy(right = h)
