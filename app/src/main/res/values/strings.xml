@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Thumb Edge</string>
+    <string name="service_label">Thumb Edge gestures</string>
+    <string name="tile_label">Edge handles</string>
+    <string name="service_description">Shows thin gesture handles on the edges of the screen. Swipe in from a handle to go back, home, open recent apps, pull down notifications and more, all with one thumb.\n\nThumb Edge uses this service to draw the handles, to press system buttons for you, and to see which app is open so it can hide the handles in apps you exclude and switch to your previous app. It collects nothing and has no internet access.</string>
+</resources>
