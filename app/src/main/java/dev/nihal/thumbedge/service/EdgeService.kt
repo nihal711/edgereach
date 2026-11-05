@@ -67,6 +67,7 @@ class EdgeService : AccessibilityService(), HandleHost {
     private var foregroundPkg: String? = null
     private val appHistory = ArrayDeque<String>()
     private var imeVisible = false
+    private var imeTitle = "keyboard"
     private var screenOn = true
     private var homePackages: Set<String> = emptySet()
     private var replayToken = 0
@@ -188,7 +189,12 @@ class EdgeService : AccessibilityService(), HandleHost {
         val w = wm ?: return
         val c = cfg
         val bounds = screenBounds(w)
-        val show = shouldShow()
+        val reason = hideReason()
+        val show = reason == null
+        if (reason != lastHideReason) {
+            DiagLog.add(if (reason == null) "Handles shown (app: ${foregroundPkg ?: "?"})" else "Handles hidden: $reason")
+            lastHideReason = reason
+        }
         for (side in Side.entries) {
             val hc = c.handle(side)
             if (!c.enabled || !hc.enabled) {
@@ -201,14 +207,26 @@ class EdgeService : AccessibilityService(), HandleHost {
         }
     }
 
-    private fun shouldShow(): Boolean {
+    private var lastHideReason: String? = "starting"
+
+    /** Why the handles should be hidden right now, or null if they should show. */
+    private fun hideReason(): String? {
         val c = cfg
-        if (!screenOn) return false
-        if (c.hideLandscape && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return false
-        if (c.hideKeyboard && imeVisible) return false
-        if (!c.showOnLockscreen && getSystemService(KeyguardManager::class.java).isKeyguardLocked) return false
+        if (!c.enabled) return "paused"
+        if (!screenOn) return "screen off"
+        if (c.hideLandscape && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return "landscape"
+        if (c.hideKeyboard && imeVisible) return "keyboard open ($imeTitle)"
+        if (!c.showOnLockscreen && getSystemService(KeyguardManager::class.java).isKeyguardLocked) return "lock screen"
         val fg = foregroundPkg
-        return fg == null || fg !in c.excluded
+        if (fg != null && fg in c.excluded) return "excluded app $fg"
+        return null
+    }
+
+    override fun onWindowShownChanged(side: Side, shown: Boolean) {
+        DiagLog.add(
+            if (shown) "System showed the ${side.name.lowercase()} handle again"
+            else "System hid the ${side.name.lowercase()} handle (app: ${foregroundPkg ?: "?"})",
+        )
     }
 
     private fun screenBounds(w: WindowManager): Rect = runCatching { w.currentWindowMetrics.bounds }
@@ -273,7 +291,15 @@ class EdgeService : AccessibilityService(), HandleHost {
 
     private fun updateEnvironment() {
         val ws = runCatching { windows }.getOrNull() ?: return
-        imeVisible = ws.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+        // Only count a keyboard that is actually on screen and keyboard-sized; some systems keep a
+        // zero-size or tiny IME window around while the keyboard is closed.
+        val minImePx = 80 * resources.displayMetrics.density
+        val ime = ws.firstOrNull {
+            it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD &&
+                Rect().also { r -> it.getBoundsInScreen(r) }.let { r -> r.height() >= minImePx && r.width() > 0 }
+        }
+        imeVisible = ime != null
+        imeTitle = ime?.title?.toString() ?: "keyboard"
         val app = ws.filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION && !it.isInPictureInPictureMode }
             .maxByOrNull { if (it.isFocused) Int.MAX_VALUE else it.layer }
         val pkg = runCatching { app?.root?.packageName?.toString() }.getOrNull()

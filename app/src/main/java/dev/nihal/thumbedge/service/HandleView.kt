@@ -32,6 +32,8 @@ interface HandleHost {
     val indicator: IndicatorOverlay?
     fun perform(side: Side, action: String)
     fun replay(side: Side, xs: FloatArray, ys: FloatArray, count: Int, durationMs: Long)
+    /** The system hid or re-showed a handle window that we wanted visible. */
+    fun onWindowShownChanged(side: Side, shown: Boolean)
 }
 
 /**
@@ -72,6 +74,18 @@ class HandleView(ctx: Context, val side: Side, private val host: HandleHost) : V
 
     fun setExclusion(on: Boolean) {
         systemGestureExclusionRects = if (on && width > 0) listOf(Rect(0, 0, width, height)) else emptyList()
+    }
+
+    private var systemHidden = false
+
+    override fun onWindowVisibilityChanged(v: Int) {
+        super.onWindowVisibilityChanged(v)
+        // Our own hiding sets the view INVISIBLE; anything else means the system hid the window.
+        val hiddenBySystem = v != VISIBLE && visibility == VISIBLE
+        if (hiddenBySystem != systemHidden) {
+            systemHidden = hiddenBySystem
+            host.onWindowShownChanged(side, !hiddenBySystem)
+        }
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {

@@ -27,6 +27,7 @@ class App : Application() {
             previous?.uncaughtException(t, e)
         }
 
+        DiagLog.add("App process started")
         DiagLog.recordExitReasons(this)
         ServiceGuard.check(this, "app started")
         GuardJob.schedule(this)
