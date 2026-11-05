@@ -128,30 +128,30 @@ fun FixScreen(config: Config, onBack: () -> Unit) {
             }
         }
 
-        item { SectionTitle("OnePlus back swipe") }
+        item { SectionTitle("Back swipe overlap") }
         item {
             TipCard(
                 Icons.Outlined.ErrorOutline,
-                "Why the back swipe overlaps",
-                "Stock Android keeps its back swipe out of the handle area. OxygenOS uses its own back gesture, which can ignore that, " +
-                    "so both may react. Ways to fix it:\n\n" +
-                    "• Turn on \"Turn off system back on handle edges\" below (needs the adb permission). Your handle's straight swipe becomes Back on that edge.\n" +
-                    "• Or switch to buttons: Settings › System › Navigation (or System navigation) › Buttons.\n" +
-                    "• Or use only one handle, so the other edge keeps the normal back swipe.",
+                "Keep handles 200 dp or shorter",
+                "With gesture navigation, Android lets an app keep the system back swipe off only 200 dp of each edge. " +
+                    "On a taller handle, the bottom 200 dp goes to Thumb Edge and the dimmer top part goes to the system back swipe. " +
+                    "Open a handle and tap \"Fit to 200 dp\", or switch to buttons in Settings › System › Navigation.",
             )
         }
-        item {
-            GroupCard {
-                SwitchRow(
-                    "Turn off system back on handle edges",
-                    if (secure) {
-                        "Only on edges with a handle, and only while Thumb Edge is running. Restored when you turn this off."
-                    } else {
-                        "Needs the one-time adb permission below"
-                    },
-                    Icons.AutoMirrored.Outlined.ArrowBack,
-                    config.blockSystemBack && secure,
-                ) { v -> if (secure) upd { it.copy(blockSystemBack = v) } else toast(ctx, "Grant the adb permission first") }
+        if (!isOplus()) {
+            item {
+                GroupCard {
+                    SwitchRow(
+                        "Turn off system back on handle edges",
+                        if (secure) {
+                            "Only on edges with a handle, and only while Thumb Edge is running. Restored when you turn this off."
+                        } else {
+                            "Needs the one-time adb permission below"
+                        },
+                        Icons.AutoMirrored.Outlined.ArrowBack,
+                        config.blockSystemBack && secure,
+                    ) { v -> if (secure) upd { it.copy(blockSystemBack = v) } else toast(ctx, "Grant the adb permission first") }
+                }
             }
         }
 
@@ -161,7 +161,7 @@ fun FixScreen(config: Config, onBack: () -> Unit) {
                 TipCard(
                     Icons.Outlined.AdminPanelSettings,
                     "Grant from a computer",
-                    "Both fixes above need a permission Android only gives over USB or wireless debugging. Do this once:\n\n" +
+                    "Optional. \"Turn back on automatically\" needs a permission Android only gives over USB or wireless debugging. Do this once:\n\n" +
                         "1. Settings › About device › tap Version › tap Build number 7 times.\n" +
                         "2. Settings › System › Developer options › turn on USB debugging (and \"Disable permission monitoring\" if you see it).\n" +
                         "3. Connect to a computer with adb and run the command below. It stays granted until you uninstall.",
@@ -244,5 +244,7 @@ private fun copy(ctx: Context, text: String) {
     ctx.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Thumb Edge", text))
     if (Build.VERSION.SDK_INT < 33) toast(ctx, "Copied")
 }
+
+private fun isOplus() = Build.MANUFACTURER.lowercase() in setOf("oneplus", "oppo", "realme")
 
 private fun toast(ctx: Context, msg: String) = Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()

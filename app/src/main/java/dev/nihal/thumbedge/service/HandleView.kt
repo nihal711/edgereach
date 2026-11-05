@@ -60,16 +60,36 @@ class HandleView(ctx: Context, val side: Side, private val host: HandleHost) : V
         }
     }
 
+    /**
+     * How much of the handle (from the bottom) the system keeps free of its back swipe. Android
+     * allows at most 200 dp per edge; above that the system back gesture wins, so that part is
+     * drawn dimmer.
+     */
+    var protectedPx: Int = Int.MAX_VALUE
+        set(v) { if (field != v) { field = v; invalidate() } }
+
     override fun onDraw(canvas: Canvas) {
         val a = if (highlighted) max(opacity, 0.85f) else opacity
         if (a <= 0.005f) return
         paint.color = color
-        paint.alpha = (a * 255).roundToInt().coerceIn(0, 255)
         val w = width.toFloat()
+        val h = height.toFloat()
         val r = w
         // Flush with the screen edge, rounded on the inner side.
-        if (side == Side.LEFT) rect.set(-r, 0f, w, height.toFloat()) else rect.set(0f, 0f, w + r, height.toFloat())
+        if (side == Side.LEFT) rect.set(-r, 0f, w, h) else rect.set(0f, 0f, w + r, h)
+        val split = (h - protectedPx).coerceIn(0f, h)
+        if (split > 0f) {
+            canvas.save()
+            canvas.clipRect(0f, 0f, w, split)
+            paint.alpha = (a * 0.35f * 255).roundToInt().coerceIn(0, 255)
+            canvas.drawRoundRect(rect, r, r, paint)
+            canvas.restore()
+        }
+        canvas.save()
+        canvas.clipRect(0f, split, w, h)
+        paint.alpha = (a * 255).roundToInt().coerceIn(0, 255)
         canvas.drawRoundRect(rect, r, r, paint)
+        canvas.restore()
     }
 
     fun setExclusion(on: Boolean) {
@@ -282,7 +302,8 @@ class HandleWindow(ctx: Context, private val wm: WindowManager, val side: Side, 
         attached = false
     }
 
-    fun apply(hc: HandleConfig, color: Int, screen: Rect, show: Boolean) {
+    fun apply(hc: HandleConfig, color: Int, screen: Rect, show: Boolean, protectedPx: Int) {
+        view.protectedPx = protectedPx
         val sh = screen.height()
         val w = (hc.widthDp * density).roundToInt().coerceAtLeast(1)
         val h = (hc.height * sh).roundToInt().coerceIn((48 * density).roundToInt(), sh)

@@ -189,6 +189,11 @@ class EdgeService : AccessibilityService(), HandleHost {
         val w = wm ?: return
         val c = cfg
         val bounds = screenBounds(w)
+        // With gesture navigation Android keeps the back swipe off at most 200 dp of each edge.
+        val gestureNav = runCatching {
+            android.provider.Settings.Secure.getInt(contentResolver, "navigation_mode") == 2
+        }.getOrDefault(false)
+        val protectedPx = if (gestureNav) (200 * resources.displayMetrics.density).toInt() else Int.MAX_VALUE
         val reason = hideReason()
         val show = reason == null
         if (reason != lastHideReason) {
@@ -202,7 +207,7 @@ class EdgeService : AccessibilityService(), HandleHost {
                 continue
             }
             val win = handles.getOrPut(side) { HandleWindow(this, w, side, this).also { it.add() } }
-            win.apply(hc, hc.color ?: accentColor(), bounds, show || highlight == side)
+            win.apply(hc, hc.color ?: accentColor(), bounds, show || highlight == side, protectedPx)
             win.view.highlighted = highlight == side
         }
     }

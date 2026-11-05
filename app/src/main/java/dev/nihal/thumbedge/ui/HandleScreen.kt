@@ -73,7 +73,7 @@ fun HandleScreen(side: Side, config: Config, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var clearJob by remember { mutableStateOf<Job?>(null) }
     val gestureNav = remember { isGestureNav(ctx) }
-    val screenHdp = LocalConfiguration.current.screenHeightDp
+    val screenHdp = remember(LocalConfiguration.current) { fullScreenHeightDp(ctx) }
 
     fun edit(f: (HandleConfig) -> HandleConfig) = SettingsRepo.update { it.withHandle(side, f(it.handle(side))) }
     fun previewing() {
@@ -95,15 +95,18 @@ fun HandleScreen(side: Side, config: Config, onBack: () -> Unit) {
     ) {
         item { GroupCard { PhonePreview(config, side) } }
 
-        if (gestureNav && hc.enabled && screenHdp * hc.height > 200f) {
+        if (gestureNav && hc.enabled && screenHdp * hc.height > 202f) {
             item {
+                val tall = (screenHdp * hc.height).roundToInt()
                 TipCard(
                     Icons.Outlined.Info,
-                    "Overlaps the back gesture",
-                    "With gesture navigation, Android lets apps claim at most 200 dp of each edge from the system back swipe. " +
-                        "This handle is about ${(screenHdp * hc.height).roundToInt()} dp tall, so the system may take swipes on part of it. " +
-                        "Make it shorter, or switch to buttons in Settings › System › Navigation.",
-                )
+                    "Top of this handle goes to the back swipe",
+                    "Android lets an app keep the system back swipe off only 200 dp of each edge. This handle is $tall dp tall, " +
+                        "so only its bottom 200 dp is yours; on the dimmer top part, the ${phoneBrand()} back swipe wins. " +
+                        "Fit the handle to 200 dp so every swipe on it reaches Thumb Edge.",
+                ) {
+                    TipButton("Fit to 200 dp") { edit { it.copy(height = (198f / screenHdp).coerceIn(0.08f, 0.8f)) } }
+                }
             }
         }
 
@@ -203,6 +206,19 @@ fun HandleScreen(side: Side, config: Config, onBack: () -> Unit) {
             onDismiss = { picking = null },
         )
     }
+}
+
+private fun fullScreenHeightDp(ctx: android.content.Context): Float {
+    val wm = ctx.getSystemService(android.view.WindowManager::class.java)
+    val px = runCatching { wm.currentWindowMetrics.bounds.height() }.getOrDefault(ctx.resources.displayMetrics.heightPixels)
+    return px / ctx.resources.displayMetrics.density
+}
+
+private fun phoneBrand(): String = when (android.os.Build.MANUFACTURER.lowercase()) {
+    "oneplus" -> "OnePlus"
+    "oppo" -> "OPPO"
+    "realme" -> "realme"
+    else -> "system"
 }
 
 @Composable
