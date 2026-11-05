@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import androidx.compose.animation.animateColorAsState
@@ -72,14 +73,28 @@ class IndicatorState {
     var level by mutableIntStateOf(0)
     var action by mutableStateOf(ActionType.NONE.name)
     var dark by mutableStateOf(false)
+    /** Screen Y of the indicator window's top edge; content is drawn relative to it. */
+    var originY by mutableFloatStateOf(0f)
 }
 
-/** Full-screen, touch-transparent overlay that shows what a swipe will do while the thumb is moving. */
+/**
+ * Touch-transparent overlay that shows what a swipe will do while the thumb is moving.
+ *
+ * It is deliberately a small window next to the edge that follows the thumb, not a full-screen
+ * one: OnePlus's anti-fraud service treats a full-screen overlay from an accessibility app as a
+ * "black screen" attack and switches the accessibility service off.
+ */
 class IndicatorOverlay(private val ctx: Context, private val wm: WindowManager) {
     private val state = IndicatorState()
     private val owner = OverlayLifecycleOwner()
     private val main = Handler(Looper.getMainLooper())
     private var view: ComposeView? = null
+    private var lp: WindowManager.LayoutParams? = null
+    private val density = ctx.resources.displayMetrics.density
+    private val winW = (WIDTH_DP * density).roundToInt()
+    private val winH = (HEIGHT_DP * density).roundToInt()
+    private val topOffset = TOP_OFFSET_DP * density
+    private val recenterAt = RECENTER_DP * density
     private val labels = HashMap<String, String>()
     private val icons = HashMap<ComponentName, ImageBitmap?>()
     private val goneRunnable = Runnable { if (!state.visible) view?.visibility = View.GONE }
@@ -97,9 +112,9 @@ class IndicatorOverlay(private val ctx: Context, private val wm: WindowManager) 
             setContent { Indicator(state, ::label, ::icon) }
             visibility = View.GONE
         }
-        val lp = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
+        val params = WindowManager.LayoutParams(
+            winW,
+            winH,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
@@ -110,8 +125,12 @@ class IndicatorOverlay(private val ctx: Context, private val wm: WindowManager) 
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
             fitInsetsTypes = 0
             title = "ThumbEdge indicator"
+            gravity = Gravity.TOP or Gravity.RIGHT
         }
-        if (runCatching { wm.addView(v, lp) }.isSuccess) view = v
+        if (runCatching { wm.addView(v, params) }.isSuccess) {
+            view = v
+            lp = params
+        }
     }
 
     fun detach() {
@@ -123,8 +142,20 @@ class IndicatorOverlay(private val ctx: Context, private val wm: WindowManager) 
 
     fun update(side: Side, x: Float, y: Float, inward: Float, level: Int, action: String) {
         val v = view ?: return
+        val params = lp ?: return
         main.removeCallbacks(goneRunnable)
-        if (v.visibility != View.VISIBLE) v.visibility = View.VISIBLE
+        // Keep the small window around the thumb; only move it when the thumb drifts away.
+        val gravity = Gravity.TOP or (if (side == Side.LEFT) Gravity.LEFT else Gravity.RIGHT)
+        val wantTop = y - topOffset
+        val starting = v.visibility != View.VISIBLE
+        if (starting || params.gravity != gravity || kotlin.math.abs(wantTop - params.y) > recenterAt) {
+            params.gravity = gravity
+            params.x = 0
+            params.y = wantTop.roundToInt()
+            state.originY = params.y.toFloat()
+            runCatching { wm.updateViewLayout(v, params) }
+        }
+        if (starting) v.visibility = View.VISIBLE
         state.side = side
         state.x = x
         state.y = y
@@ -138,6 +169,13 @@ class IndicatorOverlay(private val ctx: Context, private val wm: WindowManager) 
         state.visible = false
         main.removeCallbacks(goneRunnable)
         main.postDelayed(goneRunnable, 260)
+    }
+
+    companion object {
+        private const val WIDTH_DP = 220f
+        private const val HEIGHT_DP = 340f
+        private const val TOP_OFFSET_DP = 210f
+        private const val RECENTER_DP = 36f
     }
 
     private fun label(encoded: String) = labels.getOrPut(encoded) { actionLabel(ctx, encoded) }
@@ -182,8 +220,8 @@ private fun Indicator(s: IndicatorState, label: (String) -> String, appIcon: (Co
             val edge = if (left) 0f else size.width
             val sign = if (left) 1f else -1f
             val pull = (s.inward * 0.45f).coerceIn(0f, maxPullPx) * shown
-            val cy = s.y
-            val hh = 120.dp.toPx()
+            val cy = s.y - s.originY
+            val hh = 80.dp.toPx()
             val path = Path().apply {
                 moveTo(edge, cy - hh)
                 cubicTo(edge, cy - hh * 0.4f, edge + sign * pull, cy - hh * 0.3f, edge + sign * pull, cy)
@@ -203,7 +241,7 @@ private fun Indicator(s: IndicatorState, label: (String) -> String, appIcon: (Co
                         val cx = if (left) inset + travel else c.maxWidth - inset - travel
                         val px = (cx - p.width / 2f).roundToInt()
                             .coerceIn(edgePad, (c.maxWidth - p.width - edgePad).coerceAtLeast(edgePad))
-                        val py = (s.y - lift - p.height).roundToInt().coerceAtLeast(edgePad)
+                        val py = (s.y - s.originY - lift - p.height).roundToInt().coerceAtLeast(0)
                         p.place(px, py)
                     }
                 }
