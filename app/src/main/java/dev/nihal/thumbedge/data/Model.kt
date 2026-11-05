@@ -59,7 +59,7 @@ data class HandleConfig(
     /** Centre of the handle, as a fraction of screen height from the top. */
     val position: Float = 0.62f,
     /** Height as a fraction of screen height. */
-    val height: Float = 0.28f,
+    val height: Float = 0.2f,
     val widthDp: Int = 16,
     /** ARGB colour, or null to follow the system accent colour. */
     val color: Int? = null,

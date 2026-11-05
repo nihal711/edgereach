@@ -265,9 +265,9 @@ fun PhonePreview(config: Config, focus: Side?) {
                     if (!hc.enabled) return@forEach
                     val hh = h * hc.height
                     val top = (h * hc.position - hh / 2).coerceIn(0.dp, h - hh)
-                    val ww = (hc.widthDp.dp * (w / 412.dp)).coerceAtLeast(3.dp)
+                    val ww = (hc.widthDp.dp * (w / 412.dp)).coerceAtLeast(5.dp)
                     val base = hc.color?.let { Color(it) } ?: accent
-                    val alpha = if (focus == null || focus == side) hc.opacity.coerceAtLeast(0.25f) else 0.15f
+                    val alpha = if (focus == null || focus == side) (0.55f + hc.opacity * 0.45f) else 0.3f
                     val shape = if (side == Side.LEFT) RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp)
                     else RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp)
                     Box(
