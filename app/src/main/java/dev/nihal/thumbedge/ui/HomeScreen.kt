@@ -113,7 +113,8 @@ fun HomeScreen(config: Config, go: (Route) -> Unit) {
 
         item {
             Text(
-                "Swipe in from a handle. Release to run the action, or slide back to the edge to cancel.",
+                "Swipe in from a handle. Release to run the action, or slide back to the edge to cancel.\n\n" +
+                    "Thumb Edge ${appVersion(ctx)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),

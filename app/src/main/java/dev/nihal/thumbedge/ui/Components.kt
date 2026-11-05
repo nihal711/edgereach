@@ -261,4 +261,10 @@ fun requestIgnoreBattery(ctx: Context) = ctx.startSafely(
     Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
 )
 
+/** "1.6 (build 7)" */
+fun appVersion(ctx: Context): String = runCatching {
+    val info = ctx.packageManager.getPackageInfo(ctx.packageName, 0)
+    "${info.versionName} (build ${info.longVersionCode})"
+}.getOrDefault("unknown")
+
 fun serviceComponent(ctx: Context) = ComponentName(ctx, dev.nihal.thumbedge.service.EdgeService::class.java)

@@ -72,7 +72,6 @@ fun HandleScreen(side: Side, config: Config, onBack: () -> Unit) {
     var picking by remember { mutableStateOf<Pair<Direction, Length>?>(null) }
     val scope = rememberCoroutineScope()
     var clearJob by remember { mutableStateOf<Job?>(null) }
-    val gestureNav = remember { isGestureNav(ctx) }
     val screenHdp = remember(LocalConfiguration.current) { fullScreenHeightDp(ctx) }
 
     fun edit(f: (HandleConfig) -> HandleConfig) = SettingsRepo.update { it.withHandle(side, f(it.handle(side))) }
@@ -94,21 +93,6 @@ fun HandleScreen(side: Side, config: Config, onBack: () -> Unit) {
         },
     ) {
         item { GroupCard { PhonePreview(config, side) } }
-
-        if (gestureNav && hc.enabled && screenHdp * hc.height > 202f) {
-            item {
-                val tall = (screenHdp * hc.height).roundToInt()
-                TipCard(
-                    Icons.Outlined.Info,
-                    "Top of this handle goes to the back swipe",
-                    "Android lets an app keep the system back swipe off only 200 dp of each edge. This handle is $tall dp tall, " +
-                        "so only its bottom 200 dp is yours; on the dimmer top part, the ${phoneBrand()} back swipe wins. " +
-                        "Fit the handle to 200 dp so every swipe on it reaches Thumb Edge.",
-                ) {
-                    TipButton("Fit to 200 dp") { edit { it.copy(height = (198f / screenHdp).coerceIn(0.08f, 0.8f)) } }
-                }
-            }
-        }
 
         item { SectionTitle("Gestures") }
         Direction.entries.forEach { d ->
@@ -212,13 +196,6 @@ private fun fullScreenHeightDp(ctx: android.content.Context): Float {
     val wm = ctx.getSystemService(android.view.WindowManager::class.java)
     val px = runCatching { wm.currentWindowMetrics.bounds.height() }.getOrDefault(ctx.resources.displayMetrics.heightPixels)
     return px / ctx.resources.displayMetrics.density
-}
-
-private fun phoneBrand(): String = when (android.os.Build.MANUFACTURER.lowercase()) {
-    "oneplus" -> "OnePlus"
-    "oppo" -> "OPPO"
-    "realme" -> "realme"
-    else -> "system"
 }
 
 @Composable

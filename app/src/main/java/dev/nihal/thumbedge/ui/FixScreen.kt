@@ -84,6 +84,7 @@ fun FixScreen(config: Config, onBack: () -> Unit) {
                     ok = battery,
                     action = if (!battery) ("Allow" to { requestIgnoreBattery(ctx) }) else null,
                 )
+                StatusRow("Version", "Thumb Edge ${appVersion(ctx)}", ok = true)
                 StatusRow(
                     "Auto-repair permission",
                     if (secure) "Granted" else "Not granted (needs adb once, see below)",
@@ -132,10 +133,10 @@ fun FixScreen(config: Config, onBack: () -> Unit) {
         item {
             TipCard(
                 Icons.Outlined.ErrorOutline,
-                "Keep handles 200 dp or shorter",
-                "With gesture navigation, Android lets an app keep the system back swipe off only 200 dp of each edge. " +
-                    "On a taller handle, the bottom 200 dp goes to Thumb Edge and the dimmer top part goes to the system back swipe. " +
-                    "Open a handle and tap \"Fit to 200 dp\", or switch to buttons in Settings › System › Navigation.",
+                "Handles block the back swipe",
+                "Thumb Edge keeps the system back swipe off the whole length of each handle, so swipes that start on a handle " +
+                    "always reach Thumb Edge. The rest of the edge keeps the normal back swipe. If a swipe still goes back, " +
+                    "start it a little closer to the middle of the handle.",
             )
         }
         if (!isOplus()) {
@@ -231,8 +232,7 @@ private fun StatusRow(title: String, summary: String, ok: Boolean, action: Pair<
 
 private fun report(ctx: Context, log: List<String>): String = buildString {
     appendLine("Thumb Edge report")
-    val v = runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }.getOrNull()
-    appendLine("App $v · ${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} (${Build.DISPLAY})")
+    appendLine("App ${appVersion(ctx)} · ${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} (${Build.DISPLAY})")
     appendLine("Service running: ${EdgeService.running.value}, enabled: ${ServiceGuard.enabledInSettings(ctx)}")
     appendLine("Battery unrestricted: ${isIgnoringBattery(ctx)}, adb permission: ${ServiceGuard.hasSecurePermission(ctx)}")
     appendLine("Gesture navigation: ${isGestureNav(ctx)}")

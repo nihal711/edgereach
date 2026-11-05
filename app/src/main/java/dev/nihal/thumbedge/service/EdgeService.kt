@@ -189,11 +189,9 @@ class EdgeService : AccessibilityService(), HandleHost {
         val w = wm ?: return
         val c = cfg
         val bounds = screenBounds(w)
-        // With gesture navigation Android keeps the back swipe off at most 200 dp of each edge.
-        val gestureNav = runCatching {
-            android.provider.Settings.Secure.getInt(contentResolver, "navigation_mode") == 2
-        }.getOrDefault(false)
-        val protectedPx = if (gestureNav) (200 * resources.displayMetrics.density).toInt() else Int.MAX_VALUE
+        // The handle windows lift Android's 200 dp exclusion cap (see HandleView.onAttachedToWindow),
+        // so the whole handle is protected from the system back swipe.
+        val protectedPx = Int.MAX_VALUE
         val reason = hideReason()
         val show = reason == null
         if (reason != lastHideReason) {

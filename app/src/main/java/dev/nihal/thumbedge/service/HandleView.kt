@@ -98,6 +98,20 @@ class HandleView(ctx: Context, val side: Side, private val host: HandleHost) : V
 
     private var systemHidden = false
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // Android caps an app's back-swipe exclusion at 200 dp per edge, except for windows that
+        // ask for the navigation bar to be hidden in swipe-to-reveal mode. This window can't
+        // focus, so it never actually hides the bar, but the request lifts the cap so the whole
+        // handle stays free of the system back swipe.
+        runCatching {
+            windowInsetsController?.let {
+                it.systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                it.hide(android.view.WindowInsets.Type.navigationBars())
+            }
+        }
+    }
+
     override fun onWindowVisibilityChanged(v: Int) {
         super.onWindowVisibilityChanged(v)
         // Our own hiding sets the view INVISIBLE; anything else means the system hid the window.
