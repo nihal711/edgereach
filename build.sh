@@ -18,7 +18,7 @@ if [ ! -f keystore.properties ]; then
   printf "storeFile=thumbedge-release.jks\nstorePassword=%s\nkeyAlias=thumbedge\nkeyPassword=%s\n" "$PW" "$PW" > keystore.properties
 fi
 [ -f gradlew ] || gradle wrapper --gradle-version 8.14.3 -q
-gradle assembleRelease --no-daemon --console=plain -q 2>&1 | grep -vE "^w: |warning:" || true
+gradle testReleaseUnitTest assembleRelease --no-daemon --console=plain -q 2>&1 | grep -vE "^w: |warning:" || true
 ls app/build/outputs/apk/release/
 '
 mkdir -p dist

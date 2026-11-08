@@ -18,7 +18,27 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import dev.nihal.thumbedge.data.PreviewBus
+import dev.nihal.thumbedge.data.Side
+import dev.nihal.thumbedge.data.actionLabel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.nihal.thumbedge.Route
@@ -31,6 +51,20 @@ import kotlin.math.roundToInt
 @Composable
 fun GestureSettingsScreen(config: Config, onBack: () -> Unit) {
     val upd = SettingsRepo::update
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var hideJob by remember { mutableStateOf<Job?>(null) }
+    // While a sensitivity slider moves, the service draws the swipe zones next to the real handles.
+    fun previewing() {
+        hideJob?.cancel()
+        PreviewBus.zones.value = true
+    }
+    fun previewDone() {
+        hideJob?.cancel()
+        hideJob = scope.launch { delay(1800); PreviewBus.zones.value = false }
+    }
+    DisposableEffect(Unit) { onDispose { PreviewBus.zones.value = false } }
+
     ScreenScaffold("Gestures", onBack) {
         item { SectionTitle("Long gesture") }
         item {
@@ -60,18 +94,22 @@ fun GestureSettingsScreen(config: Config, onBack: () -> Unit) {
                     "Short swipe distance",
                     "${config.shortDistDp} dp",
                     config.shortDistDp.toFloat(), 16f..120f,
-                    summary = "How far to swipe before a gesture counts",
+                    summary = "How far to swipe before a gesture counts (dashed ring)",
                     onChange = { v ->
+                        previewing()
                         val s = v.roundToInt()
                         upd { it.copy(shortDistDp = s, longDistDp = max(it.longDistDp, s + 40)) }
                     },
+                    onDone = ::previewDone,
                 )
                 if (config.longMode == LongMode.DISTANCE) {
                     SliderRow(
                         "Long swipe distance",
                         "${config.longDistDp} dp",
                         config.longDistDp.toFloat(), (config.shortDistDp + 40f)..400f,
-                        onChange = { v -> upd { it.copy(longDistDp = v.roundToInt()) } },
+                        summary = "Swipe past this for the long action (solid ring)",
+                        onChange = { v -> previewing(); upd { it.copy(longDistDp = v.roundToInt()) } },
+                        onDone = ::previewDone,
                     )
                 } else {
                     SliderRow(
@@ -81,12 +119,47 @@ fun GestureSettingsScreen(config: Config, onBack: () -> Unit) {
                         onChange = { v -> upd { it.copy(holdMs = (v / 50f).roundToInt() * 50) } },
                     )
                 }
+            }
+        }
+
+        item { SectionTitle("Direction") }
+        item {
+            GroupCard {
+                Text(
+                    "Drag a slider to see the zones on your real handles.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                )
+                Box(
+                    Modifier.fillMaxWidth().height(250.dp).padding(horizontal = 16.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFF1E1F24)),
+                ) {
+                    ZoneFan(
+                        config = config,
+                        side = Side.RIGHT,
+                        fanRadius = 118.dp,
+                        dpScale = 118f / (config.longDistDp + 16f).coerceIn(150f, 200f),
+                        label = { actionLabel(ctx, it) },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
                 SliderRow(
-                    "Straight zone",
-                    "±${config.straightAngle}°",
-                    config.straightAngle.toFloat(), 10f..60f,
-                    summary = "Swipes steeper than this count as diagonal",
-                    onChange = { v -> upd { it.copy(straightAngle = v.roundToInt()) } },
+                    "Diagonal up starts at",
+                    "${config.upAngle}° above straight",
+                    config.upAngle.toFloat(), 10f..70f,
+                    summary = "Higher = you must swipe more steeply upward for diagonal up",
+                    onChange = { v -> previewing(); upd { it.copy(upAngle = v.roundToInt()) } },
+                    onDone = ::previewDone,
+                )
+                SliderRow(
+                    "Diagonal down starts at",
+                    "${config.downAngle}° below straight",
+                    config.downAngle.toFloat(), 10f..70f,
+                    summary = "Raise this if slanted back swipes trigger diagonal down by mistake",
+                    onChange = { v -> previewing(); upd { it.copy(downAngle = v.roundToInt()) } },
+                    onDone = ::previewDone,
                 )
             }
         }

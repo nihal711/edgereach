@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         PreviewBus.highlight.value = null
+        PreviewBus.zones.value = false
     }
 }
 

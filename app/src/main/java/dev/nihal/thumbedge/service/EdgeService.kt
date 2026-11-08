@@ -62,6 +62,8 @@ class EdgeService : AccessibilityService(), HandleHost {
         private set
     override var indicator: IndicatorOverlay? = null
         private set
+    private var zoneOverlay: ZoneOverlay? = null
+    private var zonesShown = false
 
     // What's on screen right now.
     private var foregroundPkg: String? = null
@@ -94,6 +96,7 @@ class EdgeService : AccessibilityService(), HandleHost {
             it.dark = isDark()
             it.attach()
         }
+        zoneOverlay = ZoneOverlay(this, w)
         ContextCompat.registerReceiver(
             this, screenReceiver,
             IntentFilter().apply {
@@ -109,8 +112,15 @@ class EdgeService : AccessibilityService(), HandleHost {
             SettingsRepo.config.collect {
                 cfg = it
                 syncHandles()
+                refreshZones()
                 updateKeepAlive()
                 BackGestureControl.sync(this@EdgeService, it, serviceAlive = true)
+            }
+        }
+        s.launch {
+            PreviewBus.zones.collect { on ->
+                zonesShown = on
+                refreshZones()
             }
         }
         s.launch {
@@ -171,6 +181,7 @@ class EdgeService : AccessibilityService(), HandleHost {
         handles.values.forEach { it.remove() }
         handles.clear()
         indicator?.detach(); indicator = null
+        zoneOverlay?.destroy(); zoneOverlay = null
         runner?.release(); runner = null
         runCatching { unregisterReceiver(screenReceiver) }
     }
@@ -208,6 +219,20 @@ class EdgeService : AccessibilityService(), HandleHost {
             win.apply(hc, hc.color ?: accentColor(), bounds, show || highlight == side, protectedPx)
             win.view.highlighted = highlight == side
         }
+    }
+
+    private fun refreshZones() {
+        val z = zoneOverlay ?: return
+        val w = wm ?: return
+        if (!zonesShown) {
+            z.hide()
+            return
+        }
+        runCatching {
+            val centers = handles.filterValues { it.view.visibility == android.view.View.VISIBLE }
+                .mapValues { (_, win) -> win.centerY }
+            z.show(cfg, centers, screenBounds(w).height())
+        }.onFailure { DiagLog.add("Zone preview failed: $it") }
     }
 
     private var lastHideReason: String? = "starting"

@@ -21,8 +21,8 @@ android {
         applicationId = "dev.nihal.thumbedge"
         minSdk = 31
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.6"
+        versionCode = 9
+        versionName = "1.7"
     }
 
     signingConfigs {
@@ -52,6 +52,8 @@ android {
 
     buildFeatures { compose = true }
 
+    testOptions { unitTests.isReturnDefaultValues = true }
+
     lint {
         abortOnError = false
         checkReleaseBuilds = false
@@ -77,4 +79,5 @@ dependencies {
     implementation("androidx.savedstate:savedstate-ktx:1.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    testImplementation("junit:junit:4.13.2")
 }

@@ -20,6 +20,8 @@ import dev.nihal.thumbedge.data.Direction
 import dev.nihal.thumbedge.data.HandleConfig
 import dev.nihal.thumbedge.data.Length
 import dev.nihal.thumbedge.data.LongMode
+import dev.nihal.thumbedge.data.MAX_SWIPE_ANGLE
+import dev.nihal.thumbedge.data.directionFor
 import dev.nihal.thumbedge.data.Side
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -203,12 +205,8 @@ class HandleView(ctx: Context, val side: Side, private val host: HandleHost) : V
         val shortPx = c.shortDistDp * density
         val longPx = c.longDistDp * density
         val angle = Math.toDegrees(atan2(-dy.toDouble(), inward.toDouble())).toFloat()
-        val inCone = inward > 0f && abs(angle) <= 80f
-        val newDir = when {
-            angle > c.straightAngle -> Direction.UP
-            angle < -c.straightAngle -> Direction.DOWN
-            else -> Direction.STRAIGHT
-        }
+        val inCone = inward > 0f && abs(angle) <= MAX_SWIPE_ANGLE
+        val newDir = directionFor(angle, c.upAngle, c.downAngle)
         // Slight hysteresis so the gesture doesn't flicker at the threshold.
         val armAt = if (level > 0) shortPx * 0.75f else shortPx
         var newLevel = if (inCone && dist >= armAt) 1 else 0
@@ -333,6 +331,9 @@ class HandleWindow(ctx: Context, private val wm: WindowManager, val side: Side, 
         view.visibility = if (show) View.VISIBLE else View.INVISIBLE
         view.setExclusion(show)
     }
+
+    /** Screen Y of the handle's centre, in px. */
+    val centerY: Int get() = lp.y + lp.height / 2
 
     fun setTouchable(t: Boolean) {
         touchable = t

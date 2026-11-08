@@ -282,7 +282,7 @@ private fun Indicator(s: IndicatorState, label: (String) -> String, appIcon: (Co
 }
 
 /** Minimal lifecycle so Compose can run inside a window owned by a service. */
-private class OverlayLifecycleOwner : SavedStateRegistryOwner {
+internal class OverlayLifecycleOwner : SavedStateRegistryOwner {
     private val registry = LifecycleRegistry(this)
     private val controller = SavedStateRegistryController.create(this)
     override val lifecycle: Lifecycle get() = registry

@@ -20,6 +20,19 @@ enum class Length { SHORT, LONG }
 @Serializable
 enum class LongMode { DISTANCE, HOLD }
 
+/** Widest angle (either way from straight) that still counts as a swipe in from the edge. */
+const val MAX_SWIPE_ANGLE = 80f
+
+/**
+ * Which direction a swipe is, from its angle in degrees: 0 is straight in from the edge,
+ * positive is upward, negative is downward.
+ */
+fun directionFor(angleDeg: Float, upAngle: Int, downAngle: Int): Direction = when {
+    angleDeg > upAngle -> Direction.UP
+    angleDeg < -downAngle -> Direction.DOWN
+    else -> Direction.STRAIGHT
+}
+
 fun gestureKey(d: Direction, l: Length) = "${d.name}_${l.name}"
 
 fun lengthTitle(l: Length, mode: LongMode) = when {
@@ -82,8 +95,12 @@ data class Config(
     val shortDistDp: Int = 36,
     val longDistDp: Int = 140,
     val holdMs: Int = 400,
-    /** Swipes within ±this many degrees of horizontal count as "straight". */
+    /** Used up to 1.6 for both diagonals; kept so older saved settings can be migrated. */
     val straightAngle: Int = 28,
+    /** Swipes angled more than this many degrees upward count as "diagonal up". */
+    val upAngle: Int = 28,
+    /** Swipes angled more than this many degrees downward count as "diagonal down". */
+    val downAngle: Int = 28,
     val vibrate: Boolean = true,
     val showIndicator: Boolean = true,
     val passThrough: Boolean = true,
