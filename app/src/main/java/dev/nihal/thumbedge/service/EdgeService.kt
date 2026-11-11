@@ -22,7 +22,6 @@ import android.os.Looper
 import android.os.PowerManager
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
-import android.view.accessibility.AccessibilityWindowInfo
 import androidx.core.content.ContextCompat
 import dev.nihal.thumbedge.MainActivity
 import dev.nihal.thumbedge.R
@@ -46,6 +45,7 @@ class EdgeService : AccessibilityService(), HandleHost {
     companion object {
         private const val CHANNEL = "keepalive"
         private const val NOTIFICATION_ID = 1
+        private const val SOFT_INPUT_WINDOW = "android.inputmethodservice.SoftInputWindow"
         private val runningState = MutableStateFlow(false)
         @Volatile private var current: EdgeService? = null
         val running: StateFlow<Boolean> = runningState
@@ -69,7 +69,6 @@ class EdgeService : AccessibilityService(), HandleHost {
     private var foregroundPkg: String? = null
     private val appHistory = ArrayDeque<String>()
     private var imeVisible = false
-    private var imeTitle = "keyboard"
     private var screenOn = true
     private var homePackages: Set<String> = emptySet()
     private var replayToken = 0
@@ -135,12 +134,18 @@ class EdgeService : AccessibilityService(), HandleHost {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        when (runCatching { event?.eventType }.getOrNull()) {
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
-            AccessibilityEvent.TYPE_WINDOWS_CHANGED -> {
-                main.removeCallbacks(envUpdate)
-                main.postDelayed(envUpdate, 60)
+        if (event == null) return
+        try {
+            if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+            val pkg = event.packageName?.toString() ?: return
+            val cls = event.className?.toString() ?: return
+            when {
+                cls == SOFT_INPUT_WINDOW -> onKeyboardEvent(event.contentChangeTypes, cls)
+                isActivity(pkg, cls) -> onAppChanged(pkg)
+                isKeyboardApp(pkg) -> onKeyboardEvent(event.contentChangeTypes, cls)
             }
+        } catch (t: Throwable) {
+            DiagLog.add("Window update failed: $t")
         }
     }
 
@@ -243,7 +248,7 @@ class EdgeService : AccessibilityService(), HandleHost {
         if (!c.enabled) return "paused"
         if (!screenOn) return "screen off"
         if (c.hideLandscape && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return "landscape"
-        if (c.hideKeyboard && imeVisible) return "keyboard open ($imeTitle)"
+        if (c.hideKeyboard && imeVisible) return "keyboard open"
         if (!c.showOnLockscreen && getSystemService(KeyguardManager::class.java).isKeyguardLocked) return "lock screen"
         val fg = foregroundPkg
         if (fg != null && fg in c.excluded) return "excluded app $fg"
@@ -309,36 +314,58 @@ class EdgeService : AccessibilityService(), HandleHost {
 
     // ---- foreground app / keyboard tracking ----
 
-    private val envUpdate = Runnable {
-        try {
-            updateEnvironment()
-        } catch (t: Throwable) {
-            DiagLog.add("Window update failed: $t")
-        }
+    // Android tells every accessibility service when a new window comes to the front, with its
+    // app and class name. Only activity windows count as "the app on screen"; dialogs, the
+    // notification shade and the keyboard are ignored. This needs no access to screen content.
+    private val activityCache = HashMap<String, Boolean>()
+
+    private fun isActivity(pkg: String, cls: String): Boolean = activityCache.getOrPut("$pkg/$cls") {
+        runCatching { packageManager.getActivityInfo(android.content.ComponentName(pkg, cls), 0) }.isSuccess
     }
 
-    private fun updateEnvironment() {
-        val ws = runCatching { windows }.getOrNull() ?: return
-        // Only count a keyboard that is actually on screen and keyboard-sized; some systems keep a
-        // zero-size or tiny IME window around while the keyboard is closed.
-        val minImePx = 80 * resources.displayMetrics.density
-        val ime = ws.firstOrNull {
-            it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD &&
-                Rect().also { r -> it.getBoundsInScreen(r) }.let { r -> r.height() >= minImePx && r.width() > 0 }
+    private fun onAppChanged(pkg: String) {
+        if (pkg == foregroundPkg) return
+        setKeyboard(false)
+        foregroundPkg = pkg
+        if (pkg !in homePackages) {
+            appHistory.remove(pkg)
+            appHistory.addFirst(pkg)
+            while (appHistory.size > 10) appHistory.removeLast()
         }
-        imeVisible = ime != null
-        imeTitle = ime?.title?.toString() ?: "keyboard"
-        val app = ws.filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION && !it.isInPictureInPictureMode }
-            .maxByOrNull { if (it.isFocused) Int.MAX_VALUE else it.layer }
-        val pkg = runCatching { app?.root?.packageName?.toString() }.getOrNull()
-        if (pkg != null && pkg != foregroundPkg) {
-            foregroundPkg = pkg
-            if (pkg !in homePackages) {
-                appHistory.remove(pkg)
-                appHistory.addFirst(pkg)
-                while (appHistory.size > 10) appHistory.removeLast()
-            }
+        syncHandles()
+    }
+
+    // The keyboard announces itself: its window comes up as a SoftInputWindow (or a pane
+    // appearing), and closing it makes the pane disappear. Switching apps also counts as closed;
+    // if the next app opens the keyboard, that notice arrives right after it.
+    private var imePackages: Set<String> = emptySet()
+    private var imePackagesAt = 0L
+
+    private fun isKeyboardApp(pkg: String): Boolean {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - imePackagesAt > 30_000) {
+            imePackagesAt = now
+            imePackages = runCatching {
+                getSystemService(android.view.inputmethod.InputMethodManager::class.java)
+                    .enabledInputMethodList.map { it.packageName }.toSet()
+            }.getOrDefault(emptySet())
         }
+        return pkg in imePackages
+    }
+
+    private fun onKeyboardEvent(changes: Int, cls: String) {
+        val open = when {
+            changes and AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_DISAPPEARED != 0 -> false
+            changes and AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_APPEARED != 0 -> true
+            cls == SOFT_INPUT_WINDOW -> true
+            else -> return
+        }
+        setKeyboard(open)
+    }
+
+    private fun setKeyboard(open: Boolean) {
+        if (open == imeVisible) return
+        imeVisible = open
         syncHandles()
     }
 

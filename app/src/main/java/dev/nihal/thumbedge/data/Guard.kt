@@ -24,6 +24,7 @@ object DiagLog {
 
     @Synchronized
     fun add(msg: String) {
+        android.util.Log.i("ThumbEdge", msg)
         val f = file ?: return
         runCatching {
             f.appendText("${fmt.format(Date())}  $msg\n")

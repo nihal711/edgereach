@@ -21,8 +21,8 @@ android {
         applicationId = "dev.nihal.thumbedge"
         minSdk = 31
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.7"
+        versionCode = 10
+        versionName = "1.8"
     }
 
     signingConfigs {
