@@ -6,3 +6,4 @@ keystore.properties
 .idea/
 *.iml
 dist/
+play-service-account.json
