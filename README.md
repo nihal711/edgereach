@@ -1,6 +1,6 @@
 # EdgeReach
 
-**One-hand edge gestures for any Android phone.** Thin handles sit on the edges of the screen; swipe in
+One-hand edge gestures for any Android phone. Thin handles sit on the edges of the screen; swipe in
 from one with your thumb to go Back, Home, open Recents, pull down notifications, switch to your previous
 app and more, without stretching across a big screen.
 
