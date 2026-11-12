@@ -42,6 +42,10 @@ The service is declared with `canRetrieveWindowContent="false"`
 any screen content or text. The app has no `INTERNET` permission, so nothing can leave your phone. See
 [PRIVACY.md](PRIVACY.md).
 
+## Moving your settings
+To restore a saved setup, put a settings file named `import.json` in
+`Android/data/dev.nihal.edgereach/files/` and open the app. It loads the file once and deletes it.
+
 ## If it keeps switching itself off
 Some phones (OnePlus, Oppo, Realme, Xiaomi, Vivo, Huawei and others) close apps in the background, and
 Android then switches off their accessibility service too. In the app, open **Fix problems**: allow

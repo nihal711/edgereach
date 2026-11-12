@@ -24,6 +24,7 @@ object SettingsRepo {
     private const val KEY = "config_v1"
     private const val KEY_BEFORE_UPDATE = "config_before_update"
     private const val KEY_LAST_VERSION = "last_version_code"
+    private const val IMPORT_FILE = "import.json"
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -40,6 +41,7 @@ object SettingsRepo {
         if (prefs != null) return
         val p = ctx.applicationContext.getSharedPreferences("settings", Context.MODE_PRIVATE)
         prefs = p
+        importFile(ctx, p)
         val raw = p.getString(KEY, null)
 
         val version = runCatching {
@@ -61,6 +63,24 @@ object SettingsRepo {
             DiagLog.init(ctx)
             DiagLog.add("Couldn't read the saved settings; kept a copy and started from defaults")
         }
+    }
+
+    /**
+     * Restores settings from a file: if Android/data/<package>/files/import.json exists and can be read
+     * as settings, it replaces the current ones and is deleted. Handy for moving a setup between phones.
+     */
+    private fun importFile(ctx: Context, p: SharedPreferences) {
+        val f = runCatching { java.io.File(ctx.getExternalFilesDir(null), IMPORT_FILE) }.getOrNull() ?: return
+        if (!f.isFile) return
+        val imported = runCatching { f.readText() }.getOrNull()?.let { decode(it) }
+        DiagLog.init(ctx)
+        if (imported != null) {
+            p.edit().putString(KEY, encode(imported)).commit()
+            DiagLog.add("Imported settings from $IMPORT_FILE")
+        } else {
+            DiagLog.add("Couldn't read $IMPORT_FILE; settings unchanged")
+        }
+        runCatching { f.delete() }
     }
 
     /** Parses saved settings from any app version, or null if they can't be read at all. */
