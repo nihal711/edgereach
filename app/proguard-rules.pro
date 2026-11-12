@@ -1,4 +1,4 @@
 -keepattributes *Annotation*, InnerClasses
--keep,includedescriptorclasses class dev.nihal.thumbedge.**$$serializer { *; }
--keepclassmembers class dev.nihal.thumbedge.** { *** Companion; }
--keepclasseswithmembers class dev.nihal.thumbedge.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep,includedescriptorclasses class dev.nihal.edgereach.**$$serializer { *; }
+-keepclassmembers class dev.nihal.edgereach.** { *** Companion; }
+-keepclasseswithmembers class dev.nihal.edgereach.** { kotlinx.serialization.KSerializer serializer(...); }

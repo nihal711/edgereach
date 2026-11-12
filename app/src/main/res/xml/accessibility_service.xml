@@ -6,4 +6,4 @@
     android:canRetrieveWindowContent="false"
     android:description="@string/service_description"
     android:notificationTimeout="0"
-    android:settingsActivity="dev.nihal.thumbedge.MainActivity" />
+    android:settingsActivity="dev.nihal.edgereach.MainActivity" />

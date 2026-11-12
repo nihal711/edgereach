@@ -10,11 +10,11 @@ echo "== 3 diagonal down short (Notifications)"
 $A shell input swipe 1075 1400 965 1480 180; sleep 1.5; $A shell dumpsys statusbar 2>/dev/null | grep -m2 -iE "panel.*expan|mExpandedVisible|expanded" ; $A exec-out screencap -p > /tmp/s3.png
 $A shell cmd statusbar collapse; sleep 1
 echo "== 4 diagonal up long (Recents)"
-$A shell am start -W -n dev.nihal.thumbedge/.MainActivity >/dev/null; sleep 1
+$A shell am start -W -n dev.nihal.edgereach/.MainActivity >/dev/null; sleep 1
 $A shell input swipe 1075 1700 760 1450 350; sleep 2; echo "after:  $(focus)"; $A exec-out screencap -p > /tmp/s4.png
 $A shell input keyevent KEYCODE_HOME; sleep 1
-echo "== 5 straight long (Previous app): open Settings then ThumbEdge, expect Settings"
-settings_sub; $A shell am start -W -n dev.nihal.thumbedge/.MainActivity >/dev/null; sleep 1.5; echo "before: $(focus)"
+echo "== 5 straight long (Previous app): open Settings then EdgeReach, expect Settings"
+settings_sub; $A shell am start -W -n dev.nihal.edgereach/.MainActivity >/dev/null; sleep 1.5; echo "before: $(focus)"
 $A shell input swipe 1075 1500 650 1500 350; sleep 2; echo "after:  $(focus)"
 echo "== 6 left handle straight short (Back) from Wi-Fi settings"
 settings_sub; $A shell input swipe 5 1500 150 1500 180; sleep 1.5; echo "after:  $(focus)"

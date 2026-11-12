@@ -8,13 +8,11 @@
     <!-- Optional, granted once over adb: re-enable the service and control the back swipe -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
-    <!-- Keep-alive notification so OxygenOS doesn't close the service -->
+    <!-- Keep-alive notification so battery savers don't close the service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- Lets the app ask OxygenOS not to freeze it in the background -->
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <queries>
         <intent>
@@ -40,7 +38,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ThumbEdge">
+        android:theme="@style/Theme.EdgeReach">
 
         <activity
             android:name=".MainActivity"

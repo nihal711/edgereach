@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "ThumbEdge"
+rootProject.name = "EdgeReach"
 include(":app")

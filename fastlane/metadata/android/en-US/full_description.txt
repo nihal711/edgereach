@@ -1,0 +1,25 @@
+Big phone, small thumb? EdgeReach puts thin gesture handles on the edges of your screen. Swipe in from a handle to go Back, Home, open Recents, pull down notifications or jump to your previous app, without stretching across the screen or changing your grip.
+
+Inspired by One Hand Operation+ on Samsung phones, EdgeReach brings the same idea to every other Android phone: OnePlus, Pixel, Xiaomi, Oppo, Realme, Motorola, Nothing and more.
+
+<b>Six gestures per handle</b>
+Each handle understands straight, diagonal up and diagonal down swipes, each as a short or long swipe. Long swipes can be "swipe further" or "swipe and hold". The action runs when you let go, and you can slide back to the edge to cancel.
+
+<b>Actions</b>
+Back, Home, Recents, Previous app, App drawer, Split screen, Notifications, Quick settings, Close panels, Screenshot, Screen off, Power menu, Play/pause, Next and previous track, Volume, Sound/vibrate, Flashlight, Auto-rotate, Assistant, or open any app.
+
+<b>Make it yours</b>
+• Left and right handles with their own position, height, width and colour (or your wallpaper accent)
+• Live preview bubble shows which action you are about to run, with haptic ticks
+• Taps and scrolls that start on a handle pass through to the app underneath
+• Hide handles in landscape, while typing, on the lock screen or in apps you choose
+• Quick Settings tile to pause and resume
+
+<b>Private by design</b>
+EdgeReach has no ads, no tracking and no internet permission. It uses Android's Accessibility Service only to draw the handles, press system buttons for you and know which app is open. It cannot read your screen or what you type.
+
+<b>Free and open source</b>
+The full source code is on GitHub under the GPL-3.0 license, so anyone can check exactly what the app does:
+https://github.com/nihal711/edgereach
+
+EdgeReach is an independent app and is not affiliated with Samsung.
